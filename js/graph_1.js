@@ -1,5 +1,6 @@
 var n = 400,
-random = d3.random.normal(0, .2),
+// random = d3.random.normal(0, .2),
+random = function () {return 0;},
 graph_1_data = d3.range(n).map(random);
 var margin = {top: 20, right: 20, bottom: 20, left: 40},
 width = 0.325*window.innerWidth - margin.left - margin.right,
@@ -36,10 +37,12 @@ var path_1 = svg_1.append("g")
 .append("path")
 .datum(graph_1_data)
 .attr("class", "line")
-.style("stroke", "red")
+.style("stroke", "green")
 .style("stroke-width", 1)
 .attr("d", line);
 tick_1();
+
+
 function tick_1() {
   // push a new data point onto the back
   graph_1_data.push(random());
@@ -51,7 +54,27 @@ function tick_1() {
   .duration(500)
   .ease("linear")
   .attr("transform", "translate(" + x(-1) + ",0)")
-  .each("end", tick_1);
+  // .each("end", tick_2);
+  // pop the old data point off the front
+  graph_1_data.shift();
+}
+
+function tick_1_din(datain) {
+  // push a new data point onto the back
+  var dpoint = Math.log(datain)/50;
+  if(!isFinite(dpoint))
+    dpoint = 0.99;
+  graph_1_data.push(dpoint);
+  console.log("Current push is "+dpoint);
+  // redraw the line, and slide it to the left
+  path_1
+  .attr("d", line)
+  .attr("transform", null)
+  .transition()
+  .duration(500)
+  .ease("linear")
+  .attr("transform", "translate(" + x(-1) + ",0)")
+  // .each("end", tick_2);
   // pop the old data point off the front
   graph_1_data.shift();
 }

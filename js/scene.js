@@ -10,13 +10,25 @@ document.body.appendChild( renderer.domElement );
 
 scene.fog = new THREE.FogExp2( 0x111111, 0.01 );
 
+var state = {
+    START : 0x00ffff,
+    DBPREPREPARE : 0x000044,
+    DBPREPARE : 0x000099,
+    DBCOMMIT : 0x0000ff,
+    DBREPLY : 0x005500,
+    CBPREPREPARE : 0x440000,
+    CBPREPARE : 0x990000,
+    CBCOMMIT : 0xff0000,
+    CBREPLY : 0x00ff00
+}
+
 // Create transaction plane
 var plane_geometry = new THREE.PlaneGeometry( 40, 40, 20,20 );
 // var material = new THREE.MeshLambertMaterial( { color: 0x00ff00 });
 // var material2 = new THREE.MeshBasicMaterial( { color: 0x222222, wireframe: true} );
 
 var plane_material = new THREE.MeshLambertMaterial( {
-    color: 0x232323,
+    color: 0x704F02,
     polygonOffset: true,
     polygonOffsetFactor: 1, // positive value pushes polygon further away
     polygonOffsetUnits: 1
@@ -43,7 +55,7 @@ function new_vertex_location() {
 }
 var node_hashes = [];
 // create nodes
-function add_nodes(){
+function add_nodes(i){
   // Check if nodes have died
   // remove dead nodes
   // for (var key in node_hashes) {
@@ -54,13 +66,18 @@ function add_nodes(){
   // }
 
   // Check for new nodes
-  for (var key in data[0].nodes) {
+  for (var key in data[i][1].states) {
       var uuid = key;
-      var txn_amt = data[0].nodes[key];
+      var txn_amt = data[i][1].txvolumes[key];
 
       // Check if node is already present
       if (node_hashes.indexOf(uuid) >= 0 ) { // node already exists
-        // Do nothing
+        // Check state of node
+        var node = scene.getObjectByName(uuid);
+        node.material.color.set(state[data[i][1].states[key]]);
+        node.position.z = txn_amt*0.00001;
+        plane.geometry.vertices[node.userData.location].z = txn_amt*0.00001;
+
       }
       else {
         // console.log("ADD_NODE" + uuid+":"+txn_amt);
@@ -113,20 +130,20 @@ function onWindowResize(){
     renderer.setSize( width, height );
 }
 
-var update = function(){
+var update = function(i){
   // while there are timesteps
 
   // get all
 
-    add_nodes();
+    add_nodes(i);
 
-    for (var i = 0; i < plane.geometry.vertices.length; i++) {
-        plane.geometry.vertices[i].z += Math.random()*0.1 - 0.05;
-        plane.geometry.verticesNeedUpdate = true;
+    // for (var i = 0; i < plane.geometry.vertices.length; i++) {
+        // plane.geometry.vertices[i].z += Math.random()*0.1 - 0.05;
+        // plane.geometry.verticesNeedUpdate = true;
 
         // node = scene.getObjectByName( "node_"+i.toString() );
         // node.position.z = plane.geometry.vertices[i].z;
-    }
+    // }
 
     // wireframe
     var helper = scene.getObjectByName( "helper" );
@@ -151,12 +168,23 @@ var update = function(){
 // }
 
 // var prevIntersects;
-
+var timestamp_counter = 0;
+var update_counter = 0
 var render = function () {
-    for (var key in data[0].nodes) {
-      // console.log("RENDER " + key+":"+data[0].nodes[key]);
+
+    if(timestamp_counter < data.length) {
+      if(update_counter >= 2){
+        update(timestamp_counter);
+        update_counter = 0;
+        timestamp_counter++;
+
+        // Update the graphs
+        tick_2_din(data[timestamp_counter][1]['graphdata'][0]);
+      }
+      else {
+        update_counter++;
+      }
     }
-    update();
     // raycaster.setFromCamera( mouse, camera );
 
     // var intersects = raycaster.intersectObjects( scene.children );
